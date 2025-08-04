@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Encartes QRofertas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .form-panel {
+            width: 450px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .preview-panel {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        textarea {
+            height: 60px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        .products-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-info {
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .product-image-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .image-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .image-search {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .image-search input {
+            flex: 1;
+        }
+
+        .image-results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .image-option {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+
+        .image-option:hover {
+            border-color: #007bff;
+        }
+
+        .image-option.selected {
+            border-color: #28a745;
+        }
+
+        .file-upload {
+            margin-top: 10px;
+        }
+
+        .current-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 2px solid #28a745;
+            margin-top: 10px;
+        }
+
+        /* Estilos do Encarte */
+        .encarte {
+            width: 794px;
+            height: 1123px;
+            background: linear-gradient(135deg, #ff9500 0%, #00bcd4 100%);
+            position: relative;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .header {
+            position: relative;
+            height: 250px;
+            background: linear-gradient(135deg, #ff9500 0%, #00bcd4 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="3" fill="rgba(255,255,255,0.1)"/><circle cx="60" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 2;
+        }
+
+        .cart-icon {
+            width: 80px;
+            height: 80px;
+            background: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .promo-text {
+            color: white;
+            z-index: 2;
+        }
+
+        .promo-main {
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            line-height: 1;
+        }
+
+        .promo-sub {
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-top: -5px;
+        }
+
+        .store-info {
+            text-align: right;
+            color: white;
+            z-index: 2;
+        }
+
+        .store-logo {
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .store-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+
+        .milk-bottles {
+            position: absolute;
+            right: 200px;
+            top: 50px;
+            display: flex;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .bottle {
+            width: 40px;
+            height: 80px;
+            background: linear-gradient(to bottom, #f0f0f0, #ffffff);
+            border-radius: 8px 8px 15px 15px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .bottle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 15px;
+            height: 10px;
+            background: #ddd;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .products-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            height: calc(100% - 370px);
+        }
+
+        .featured-product {
+            background: #007bff;
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .featured-product::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .featured-title {
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .featured-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 10px auto;
+            z-index: 2;
+            position: relative;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .featured-price {
+            background: #ffeb3b;
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            z-index: 2;
+            position: relative;
+        }
+
+        .featured-unit {
+            background: white;
+            color: #333;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .products-right {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            align-content: start;
+        }
+
+        .product-card {
+            background: #ff9500;
+            border-radius: 15px;
+            padding: 12px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+        }
+
+        .product-name {
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            z-index: 2;
+            position: relative;
+            height: 44px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 8px auto;
+            z-index: 2;
+            position: relative;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .product-price {
+            background: #007bff;
+            color: white;
+            padding: 6px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 2;
+            position: relative;
+        }
+
+        .product-unit {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 120px;
+        }
+
+        .contact-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .whatsapp-icon {
+            background: #25d366;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            font-size: 16px;
+        }
+
+        .validity {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .payment-card {
+            background: white;
+            color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .address {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .download-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .form-panel {
+                width: 100%;
+                position: relative;
+                max-height: none;
+            }
+            
+            .encarte {
+                transform: scale(0.8);
+                transform-origin: top center;
+                margin: -100px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-panel">
+            <h2>Configurações do Encarte</h2>
+            
+            <div class="form-group">
+                <label>Nome da Loja</label>
+                <input type="text" id="storeName" value="maristela" placeholder="Nome da loja">
+            </div>
+
+            <div class="form-group">
+                <label>Título da Promoção</label>
+                <input type="text" id="promoTitle" value="QUARTA DIA DO LEITE" placeholder="Ex: QUARTA DIA DO LEITE">
+            </div>
+
+            <div class="form-group">
+                <label>Telefone WhatsApp</label>
+                <input type="text" id="whatsapp" value="(11) 4146-2980" placeholder="(11) 99999-9999">
+            </div>
+
+            <div class="form-group">
+                <label>Endereço</label>
+                <textarea id="address" placeholder="Endereço completo">Rua Tupi Paulista, 222 - Jardim Marilu - Carapicuíba - SP</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Data de Validade</label>
+                <input type="date" id="validity">
+            </div>
+
+            <hr style="margin: 20px 0;">
+            
+            <h3>Produto em Destaque</h3>
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="featuredName" value="LEITE PIRACANJUBA DESNATADO OU SEMI" placeholder="Nome do produto em destaque">
+            </div>
+
+            <div class="form-group">
+                <label>Preço</label>
+                <input type="number" id="featuredPrice" value="5.19" step="0.01" placeholder="5.19">
+            </div>
+
+            <div class="form-group">
+                <label>Unidade</label>
+                <input type="text" id="featuredUnit" value="1L" placeholder="1L">
+            </div>
+
+            <div class="image-section">
+                <label>Imagem do Produto em Destaque</label>
+                <div class="image-search">
+                    <input type="text" id="featuredSearchTerm" placeholder="Buscar imagem (ex: leite piracanjuba)">
+                    <button class="btn btn-small" onclick="searchFeaturedImages()">Buscar</button>
+                </div>
+                <input type="file" id="featuredImageFile" accept="image/*" class="file-upload" onchange="handleFeaturedImageUpload(event)">
+                <div id="featuredImageResults" class="image-results"></div>
+                <div id="featuredCurrentImage"></div>
+            </div>
+
+            <hr style="margin: 20px 0;">
+            
+            <h3>Adicionar Produtos</h3>
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="productName" placeholder="Nome do produto">
+            </div>
+
+            <div class="form-group">
+                <label>Preço</label>
+                <input type="number" id="productPrice" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Unidade</label>
+                <input type="text" id="productUnit" placeholder="200g">
+            </div>
+
+            <div class="image-section">
+                <label>Imagem do Produto</label>
+                <div class="image-search">
+                    <input type="text" id="productSearchTerm" placeholder="Buscar imagem do produto">
+                    <button class="btn btn-small" onclick="searchProductImages()">Buscar</button>
+                </div>
+                <input type="file" id="productImageFile" accept="image/*" class="file-upload" onchange="handleProductImageUpload(event)">
+                <div id="productImageResults" class="image-results"></div>
+                <div id="productCurrentImage"></div>
+            </div>
+
+            <button class="btn btn-success" onclick="addProduct()">Adicionar Produto</button>
+
+            <div class="products-list" id="productsList">
+                <!-- Produtos serão listados aqui -->
+            </div>
+
+            <hr style="margin: 20px 0;">
+
+            <button class="btn" onclick="updatePreview()">Atualizar Preview</button>
+            <div class="download-options">
+                <button class="btn btn-success" onclick="downloadPDF()">Baixar PDF</button>
+                <button class="btn btn-success" onclick="downloadJPG()">Baixar JPG</button>
+            </div>
+            <button class="btn btn-danger" onclick="clearAll()">Limpar Tudo</button>
+        </div>
+
+        <div class="preview-panel">
+            <div class="encarte" id="encarte">
+                <div class="header">
+                    <div class="logo-section">
+                        <div class="cart-icon">🛒</div>
+                        <div class="promo-text">
+                            <div class="promo-main" id="promoMainText">QUARTA</div>
+                            <div class="promo-sub" id="promoSubText">DIA DO LEITE</div>
+                        </div>
+                    </div>
+                    
+                    <div class="milk-bottles">
+                        <div class="bottle"></div>
+                        <div class="bottle" style="height: 90px; margin-top: -10px;"></div>
+                        <div class="bottle"></div>
+                    </div>
+
+                    <div class="store-info">
+                        <div class="store-logo">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: white; color: #333; padding: 5px 8px; border-radius: 3px; font-size: 12px;">MERCADO</span>
+                                <span class="store-name" id="storeNameDisplay">maristela</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="products-grid">
+                    <div class="featured-product">
+                        <div class="featured-title" id="featuredTitle">LEITE PIRACANJUBA<br>DESNATADO OU SEMI</div>
+                        <div class="featured-image" id="featuredImageDisplay">🥛</div>
+                        <div>
+                            <div class="featured-price">
+                                <span style="font-size: 24px;">R$</span><span id="featuredPriceDisplay">5,19</span>
+                            </div>
+                            <div class="featured-unit" id="featuredUnitDisplay">1L</div>
+                        </div>
+                    </div>
+
+                    <div class="products-right" id="productsGrid">
+                        <!-- Produtos serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="contact-info">
+                        <div class="whatsapp-icon">📱</div>
+                        <div id="whatsappDisplay">(11) 4146-2980</div>
+                    </div>
+
+                    <div class="validity">
+                        <div style="color: #ffeb3b; font-weight: bold;">Ofertas Válidas</div>
+                        <div style="font-size: 14px;" id="validityDisplay">apenas dia 16/07/2025</div>
+                    </div>
+
+                    <div class="payment-methods">
+                        <div class="payment-card">PIX</div>
+                        <div class="payment-card">ELO</div>
+                        <div class="payment-card">VISA</div>
+                        <div class="payment-card">MASTER</div>
+                        <div class="payment-card">HIPER</div>
+                        <div class="payment-card">AMEX</div>
+                        <div class="payment-card">SODEXO</div>
+                        <div class="payment-card">TICKET</div>
+                    </div>
+                </div>
+
+                <div class="address" id="addressDisplay">
+                    Rua Tupi Paulista, 222 - Jardim Marilu - Carapicuíba - SP
+                    <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">*Imagens Meramente Ilustrativas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let products = [
+            {name: "LEITE INTEGRAL ITALAC", price: 5.29, unit: "1L", image: null},
+            {name: "SUCRILHOS KELLOGG´S ORGINAL OU CHOCOLATE", price: 8.99, unit: "240G", image: null},
+            {name: "CAFÉ A VÁCUO PILÃO CAFETERIA", price: 34.99, unit: "500G", image: null},
+            {name: "BEBIDA LÁCTEA PIRAKIDS CHOCOLATE", price: 1.49, unit: "200ML", image: null},
+            {name: "MISTURA BOLO DR OETKER SABORES", price: 6.49, unit: "400G", image: null},
+            {name: "POLPA DANONE MORANGO OU POLPA DANONE KIDS MORANGO", price: 8.99, unit: "510G", image: null}
+        ];
+
+        let featuredImage = null;
+        let currentProductImage = null;
+
+        // Definir data padrão para hoje
+        document.getElementById('validity').valueAsDate = new Date();
+
+        async function searchImages(query) {
+            // Simulação de busca de imagens - substituir por API real
+            const mockImages = [
+                'https://via.placeholder.com/200x200/ff9500/white?text=' + encodeURIComponent(query),
+                'https://via.placeholder.com/200x200/007bff/white?text=' + encodeURIComponent(query),
+                'https://via.placeholder.com/200x200/28a745/white?text=' + encodeURIComponent(query),
+                'https://via.placeholder.com/200x200/dc3545/white?text=' + encodeURIComponent(query),
+                'https://via.placeholder.com/200x200/ffc107/black?text=' + encodeURIComponent(query),
+                'https://via.placeholder.com/200x200/17a2b8/white?text=' + encodeURIComponent(query)
+            ];
+            
+            return mockImages;
+        }
+
+        async function searchFeaturedImages() {
+            const searchTerm = document.getElementById('featuredSearchTerm').value;
+            if (!searchTerm) return;
+
+            const resultsDiv = document.getElementById('featuredImageResults');
+            resultsDiv.innerHTML = '<div class="loading">Buscando imagens...</div>';
+
+            try {
+                const images = await searchImages(searchTerm);
+                resultsDiv.innerHTML = '';
+                
+                images.forEach((imageUrl, index) => {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = 'image-option';
+                    img.onclick = () => selectFeaturedImage(imageUrl);
+                    resultsDiv.appendChild(img);
+                });
+            } catch (error) {
+                resultsDiv.innerHTML = '<div style="color: red;">Erro ao buscar imagens</div>';
+            }
+        }
+
+        async function searchProductImages() {
+            const searchTerm = document.getElementById('productSearchTerm').value;
+            if (!searchTerm) return;
+
+            const resultsDiv = document.getElementById('productImageResults');
+            resultsDiv.innerHTML = '<div class="loading">Buscando imagens...</div>';
+
+            try {
+                const images = await searchImages(searchTerm);
+                resultsDiv.innerHTML = '';
+                
+                images.forEach((imageUrl, index) => {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = 'image-option';
+                    img.onclick = () => selectProductImage(imageUrl);
+                    resultsDiv.appendChild(img);
+                });
+            } catch (error) {
+                resultsDiv.innerHTML = '<div style="color: red;">Erro ao buscar imagens</div>';
+            }
+        }
+
+        function selectFeaturedImage(imageUrl) {
+            featuredImage = imageUrl;
+            document.getElementById('featuredCurrentImage').innerHTML = 
+                `<img src="${imageUrl}" class="current-image" alt="Imagem selecionada">`;
+            
+            // Remover seleção anterior
+            document.querySelectorAll('#featuredImageResults .image-option').forEach(img => {
+                img.classList.remove('selected');
+            });
+            
+            // Adicionar seleção atual
+            event.target.classList.add('selected');
+            updatePreview();
+        }
+
+        function selectProductImage(imageUrl) {
+            currentProductImage = imageUrl;
+            document.getElementById('productCurrentImage').innerHTML = 
+                `<img src="${imageUrl}" class="current-image" alt="Imagem selecionada">`;
+            
+            // Remover seleção anterior
+            document.querySelectorAll('#productImageResults .image-option').forEach(img => {
+                img.classList.remove('selected');
+            });
+            
+            // Adicionar seleção atual
+            event.target.classList.add('selected');
+        }
+
+        function handleFeaturedImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    featuredImage = e.target.result;
+                    document.getElementById('featuredCurrentImage').innerHTML = 
+                        `<img src="${featuredImage}" class="current-image" alt="Imagem carregada">`;
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleProductImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentProductImage = e.target.result;
+                    document.getElementById('productCurrentImage').innerHTML = 
+                        `<img src="${currentProductImage}" class="current-image" alt="Imagem carregada">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addProduct() {
+            const name = document.getElementById('productName').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const unit = document.getElementById('productUnit').value;
+
+            if (name && price && unit) {
+                products.push({
+                    name, 
+                    price, 
+                    unit, 
+                    image: currentProductImage
+                });
+                updateProductsList();
+                updatePreview();
+                
+                // Limpar campos
+                document.getElementById('productName').value = '';
+                document.getElementById('productPrice').value = '';
+                document.getElementById('productUnit').value = '';
+                document.getElementById('productSearchTerm').value = '';
+                document.getElementById('productImageResults').innerHTML = '';
+                document.getElementById('productCurrentImage').innerHTML = '';
+                currentProductImage = null;
+            } else {
+                alert('Preencha todos os campos do produto!');
+            }
+        }
+
+        function removeProduct(index) {
+            products.splice(index, 1);
+            updateProductsList();
+            updatePreview();
+        }
+
+        function updateProductsList() {
+            const list = document.getElementById('productsList');
+            list.innerHTML = '';
+            
+            products.forEach((product, index) => {
+                const item = document.createElement('div');
+                item.className = 'product-item';
+                item.innerHTML = `
+                    ${product.image ? `<img src="${product.image}" class="product-image-thumb" alt="${product.name}">` : ''}
+                    <div class="product-info">
+                        <strong>${product.name}</strong><br>
+                        R$ ${product.price.toFixed(2)} - ${product.unit}
+                    </div>
+                    <button class="btn btn-danger" style="padding: 3px 8px; font-size: 12px;" onclick="removeProduct(${index})">×</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function updatePreview() {
+            // Atualizar informações da loja
+            document.getElementById('storeNameDisplay').textContent = document.getElementById('storeName').value;
+            document.getElementById('whatsappDisplay').textContent = document.getElementById('whatsapp').value;
+            document.getElementById('addressDisplay').innerHTML = 
+                document.getElementById('address').value + 
+                '<div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">*Imagens Meramente Ilustrativas</div>';
+
+            // Atualizar título da promoção
+            const promoTitle = document.getElementById('promoTitle').value;
+            const words = promoTitle.split(' ');
+            if (words.length >= 2) {
+                document.getElementById('promoMainText').textContent = words.slice(0, Math.ceil(words.length/2)).join(' ');
+                document.getElementById('promoSubText').textContent = words.slice(Math.ceil(words.length/2)).join(' ');
+            } else {
+                document.getElementById('promoMainText').textContent = promoTitle;
+                document.getElementById('promoSubText').textContent = '';
+            }
+
+            // Atualizar produto em destaque
+            document.getElementById('featuredTitle').textContent = document.getElementById('featuredName').value;
+            document.getElementById('featuredPriceDisplay').textContent = parseFloat(document.getElementById('featuredPrice').value).toFixed(2).replace('.', ',');
+            document.getElementById('featuredUnitDisplay').textContent = document.getElementById('featuredUnit').value;
+
+            // Atualizar imagem do produto em destaque
+            const featuredImageDisplay = document.getElementById('featuredImageDisplay');
+            if (featuredImage) {
+                featuredImageDisplay.innerHTML = `<img src="${featuredImage}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" alt="Produto em destaque">`;
+            } else {
+                featuredImageDisplay.innerHTML = '🥛';
+            }
+
+            // Atualizar validade
+            const validityDate = new Date(document.getElementById('validity').value);
+            document.getElementById('validityDisplay').textContent = `apenas dia ${validityDate.toLocaleDateString('pt-BR')}`;
+
+            // Atualizar grid de produtos com layout responsivo
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+
+            // Ajustar número de colunas baseado na quantidade de produtos
+            const numProducts = Math.min(products.length, 12);
+            let columns = 3;
+            if (numProducts <= 6) columns = 2;
+            if (numProducts <= 3) columns = 1;
+            
+            grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+
+            products.slice(0, 12).forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                
+                const imageContent = product.image 
+                    ? `<img src="${product.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="${product.name}">`
+                    : '📦';
+
+                card.innerHTML = `
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-image">${imageContent}</div>
+                    <div>
+                        <div class="product-price">R$ ${product.price.toFixed(2).replace('.', ',')}</div>
+                        <div class="product-unit">${product.unit}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function clearAll() {
+            if (confirm('Tem certeza que deseja limpar todos os dados?')) {
+                products = [];
+                featuredImage = null;
+                currentProductImage = null;
+                document.getElementById('storeName').value = '';
+                document.getElementById('promoTitle').value = '';
+                document.getElementById('whatsapp').value = '';
+                document.getElementById('address').value = '';
+                document.getElementById('featuredName').value = '';
+                document.getElementById('featuredPrice').value = '';
+                document.getElementById('featuredUnit').value = '';
+                document.getElementById('featuredSearchTerm').value = '';
+                document.getElementById('featuredImageResults').innerHTML = '';
+                document.getElementById('featuredCurrentImage').innerHTML = '';
+                document.getElementById('productSearchTerm').value = '';
+                document.getElementById('productImageResults').innerHTML = '';
+                document.getElementById('productCurrentImage').innerHTML = '';
+                updateProductsList();
+                updatePreview();
+            }
+        }
+
+        async function downloadPDF() {
+            const element = document.getElementById('encarte');
+            
+            try {
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF.jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                const storeName = document.getElementById('storeName').value || 'encarte';
+                const date = new Date().toISOString().split('T')[0];
+                pdf.save(`${storeName}-${date}.pdf`);
+                
+            } catch (error) {
+                console.error('Erro ao gerar PDF:', error);
+                alert('Erro ao gerar PDF. Tente novamente.');
+            }
+        }
+
+        async function downloadJPG() {
+            const element = document.getElementById('encarte');
+            
+            try {
+                const canvas = await html2canvas(element, {
+                    scale: 3,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: 794,
+                    height: 1123
+                });
+                
+                // Criar link para download
+                const link = document.createElement('a');
+                link.download = `${document.getElementById('storeName').value || 'encarte'}-${new Date().toISOString().split('T')[0]}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+                
+            } catch (error) {
+                console.error('Erro ao gerar JPG:', error);
+                alert('Erro ao gerar JPG. Tente novamente.');
+            }
+        }
+
+        // Inicializar
+        updateProductsList();
+        updatePreview();
+
+        // Auto-completar busca de imagem baseada no nome do produto
+        document.getElementById('productName').addEventListener('input', function() {
+            const productName = this.value;
+            if (productName.length > 3) {
+                document.getElementById('productSearchTerm').value = productName;
+            }
+        });
+
+        document.getElementById('featuredName').addEventListener('input', function() {
+            const featuredName = this.value;
+            if (featuredName.length > 3) {
+                document.getElementById('featuredSearchTerm').value = featuredName;
+            }
+        });
+
+        // Atualização automática do preview
+        document.getElementById('storeName').addEventListener('input', updatePreview);
+        document.getElementById('promoTitle').addEventListener('input', updatePreview);
+        document.getElementById('whatsapp').addEventListener('input', updatePreview);
+        document.getElementById('address').addEventListener('input', updatePreview);
+        document.getElementById('featuredName').addEventListener('input', updatePreview);
+        document.getElementById('featuredPrice').addEventListener('input', updatePreview);
+        document.getElementById('featuredUnit').addEventListener('input', updatePreview);
+        document.getElementById('validity').addEventListener('change', updatePreview);
+    </script>
+</body>
+</html>
